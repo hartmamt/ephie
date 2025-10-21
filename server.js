@@ -114,6 +114,7 @@ class Room {
         this.isDarkSide = false;
         this.gameStarted = false;
         this.maxPlayers = 6;
+        this.hasDrawnThisTurn = false;
     }
 
     addPlayer(socketId, playerName) {
@@ -149,6 +150,7 @@ class Room {
         this.currentPlayerIndex = 0;
         this.direction = 1;
         this.isDarkSide = false;
+        this.hasDrawnThisTurn = false;
 
         // Deal 7 cards to each player
         for (let i = 0; i < 7; i++) {
@@ -171,6 +173,7 @@ class Room {
 
     nextPlayer() {
         this.currentPlayerIndex = (this.currentPlayerIndex + this.direction + this.players.length) % this.players.length;
+        this.hasDrawnThisTurn = false;
     }
 
     getGameState(socketId) {
@@ -191,7 +194,8 @@ class Room {
             gameStarted: this.gameStarted,
             discardPile: this.discardPile,
             melds: this.melds,
-            deckCount: this.deck.count()
+            deckCount: this.deck.count(),
+            hasDrawnThisTurn: this.hasDrawnThisTurn
         };
     }
 }
@@ -280,9 +284,15 @@ io.on('connection', (socket) => {
             return;
         }
 
+        if (room.hasDrawnThisTurn) {
+            socket.emit('error', { message: 'You already drew a card this turn' });
+            return;
+        }
+
         const card = room.deck.draw();
         if (card) {
             player.hand.push(card);
+            room.hasDrawnThisTurn = true;
 
             // Update all players
             room.players.forEach(p => {
@@ -348,6 +358,11 @@ io.on('connection', (socket) => {
 
         if (player.socketId !== currentPlayer.socketId) {
             socket.emit('error', { message: 'Not your turn' });
+            return;
+        }
+
+        if (!room.hasDrawnThisTurn) {
+            socket.emit('error', { message: 'You must draw a card first' });
             return;
         }
 

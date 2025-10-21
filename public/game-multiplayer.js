@@ -305,10 +305,11 @@ function updateDiscardPile(discardPile, isDarkSide) {
 
 function updateButtons(state) {
     const isMyTurn = state.currentPlayerSocketId === mySocketId;
+    const hasDrawn = state.hasDrawnThisTurn;
 
-    document.getElementById('draw-card-btn').disabled = !isMyTurn;
+    document.getElementById('draw-card-btn').disabled = !isMyTurn || hasDrawn;
     document.getElementById('play-meld-btn').disabled = !isMyTurn || selectedCards.length < 3;
-    document.getElementById('discard-btn').disabled = !isMyTurn || selectedCards.length !== 1;
+    document.getElementById('discard-btn').disabled = !isMyTurn || !hasDrawn || selectedCards.length !== 1;
 }
 
 function createCardElement(card, isDarkSide) {
