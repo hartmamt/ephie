@@ -593,3 +593,67 @@ header h1 {
         box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
     }
 }
+
+/* Hybrid UNO + Rummy Game Styles */
+.card.playable {
+    border: 3px solid #28a745;
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.6);
+    cursor: pointer !important;
+}
+
+.card.playable:hover {
+    transform: translateY(-15px) scale(1.05);
+    box-shadow: 0 12px 24px rgba(40, 167, 69, 0.8);
+    border-color: #20c997;
+}
+
+.action-hint {
+    margin-top: 15px;
+    padding: 12px 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #0d6efd;
+    font-weight: 500;
+    text-align: center;
+    min-height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#turn-hint {
+    margin-left: 10px;
+    font-size: 0.9em;
+}
+
+/* Update button styles for new actions */
+#player-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+#player-actions .btn {
+    flex: 1;
+    min-width: 140px;
+    max-width: 200px;
+}
+
+/* Emphasize playable state */
+#player-area.your-turn {
+    border: 3px solid #28a745;
+    animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+    0%, 100% {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
+    }
+    50% {
+        border-color: #20c997;
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+}

@@ -81,7 +81,7 @@ function setupEventListeners() {
     // Game actions
     document.getElementById('draw-card-btn').onclick = drawCard;
     document.getElementById('play-meld-btn').onclick = playMeld;
-    document.getElementById('discard-btn').onclick = discardCard;
+    document.getElementById('end-turn-btn').onclick = endTurn;
     document.getElementById('sort-hand-btn').onclick = sortHand;
 
     // Draw pile
@@ -215,9 +215,31 @@ function updatePlayerHand(hand, isDarkSide) {
     const handContainer = document.getElementById('player-hand');
     handContainer.innerHTML = '';
 
+    const isMyTurn = gameState && gameState.currentPlayerSocketId === mySocketId;
+    const hasDrawn = gameState && gameState.hasDrawnThisTurn;
+    const hasPlayed = gameState && gameState.hasPlayedThisTurn;
+    const topCard = gameState && gameState.discardPile.length > 0 ? gameState.discardPile[gameState.discardPile.length - 1] : null;
+
     hand.forEach(card => {
         const cardElement = createCardElement(card, isDarkSide);
-        cardElement.onclick = () => toggleCardSelection(card.id);
+
+        // Determine if card is playable
+        const isPlayable = isMyTurn && !hasDrawn && canPlayCard(card, topCard, isDarkSide);
+
+        if (isPlayable) {
+            cardElement.classList.add('playable');
+        }
+
+        // Card click handler
+        cardElement.onclick = () => {
+            if (isMyTurn && !hasDrawn && !hasPlayed && isPlayable) {
+                // Play the card directly (UNO-style)
+                playCard(card.id);
+            } else {
+                // Select/deselect for meld
+                toggleCardSelection(card.id);
+            }
+        };
 
         if (selectedCards.includes(card.id)) {
             cardElement.classList.add('selected');
@@ -225,6 +247,61 @@ function updatePlayerHand(hand, isDarkSide) {
 
         handContainer.appendChild(cardElement);
     });
+
+    // Update hints
+    updateActionHint(isMyTurn, hasDrawn, hasPlayed);
+}
+
+// Check if a card can be played on discard pile
+function canPlayCard(card, topCard, isDarkSide) {
+    if (!topCard) return true; // First card
+
+    // Wild and Flip can always be played
+    if (card.type === 'wild' || card.type === 'flip') return true;
+
+    const cardColor = isDarkSide ? card.darkColor : card.lightColor;
+    const topColor = isDarkSide ? topCard.darkColor : topCard.lightColor;
+
+    // Match color
+    if (cardColor === topColor) return true;
+
+    // Match number
+    if (card.type === 'number' && topCard.type === 'number') {
+        const cardValue = isDarkSide && card.value < 5 ? card.value + 5 : card.value;
+        const topValue = isDarkSide && topCard.value < 5 ? topCard.value + 5 : topCard.value;
+        if (cardValue === topValue) return true;
+    }
+
+    // Match type (for special cards)
+    if (card.type === topCard.type && card.type !== 'number') return true;
+
+    return false;
+}
+
+function updateActionHint(isMyTurn, hasDrawn, hasPlayed) {
+    const hintEl = document.getElementById('action-hint');
+    const turnHintEl = document.getElementById('turn-hint');
+
+    if (!isMyTurn) {
+        hintEl.textContent = '';
+        turnHintEl.textContent = '';
+        return;
+    }
+
+    turnHintEl.textContent = '(Your Turn!)';
+    turnHintEl.style.color = '#28a745';
+    turnHintEl.style.fontWeight = 'bold';
+
+    if (hasDrawn) {
+        hintEl.textContent = '📍 You drew a card. Click "End Turn" to finish your turn.';
+        hintEl.style.color = '#fd7e14';
+    } else if (hasPlayed) {
+        hintEl.textContent = '✅ You played card(s). You can play more cards or click "End Turn".';
+        hintEl.style.color = '#28a745';
+    } else {
+        hintEl.textContent = '👉 Draw a card OR click a playable card (green glow) to play!';
+        hintEl.style.color = '#0d6efd';
+    }
 }
 
 function updateOtherPlayers(players, currentPlayerSocketId) {
@@ -306,10 +383,16 @@ function updateDiscardPile(discardPile, isDarkSide) {
 function updateButtons(state) {
     const isMyTurn = state.currentPlayerSocketId === mySocketId;
     const hasDrawn = state.hasDrawnThisTurn;
+    const hasPlayed = state.hasPlayedThisTurn;
 
-    document.getElementById('draw-card-btn').disabled = !isMyTurn || hasDrawn;
-    document.getElementById('play-meld-btn').disabled = !isMyTurn || selectedCards.length < 3;
-    document.getElementById('discard-btn').disabled = !isMyTurn || !hasDrawn || selectedCards.length !== 1;
+    // Draw button: only if haven't drawn or played yet
+    document.getElementById('draw-card-btn').disabled = !isMyTurn || hasDrawn || hasPlayed;
+
+    // Play meld button: can play melds anytime if you have 3+ selected and haven't drawn
+    document.getElementById('play-meld-btn').disabled = !isMyTurn || selectedCards.length < 3 || hasDrawn;
+
+    // End turn button: only after drawing or playing
+    document.getElementById('end-turn-btn').disabled = !isMyTurn || (!hasDrawn && !hasPlayed);
 }
 
 function createCardElement(card, isDarkSide) {
@@ -378,18 +461,23 @@ function playMeld() {
     selectedCards = [];
 }
 
-function discardCard() {
+function playCard(cardId) {
     if (gameState.currentPlayerSocketId !== mySocketId) {
         showMessage('Not your turn!', 1500);
         return;
     }
 
-    if (selectedCards.length !== 1) {
-        showMessage('Select exactly 1 card to discard', 1500);
+    socket.emit('playCard', { cardId });
+    selectedCards = [];
+}
+
+function endTurn() {
+    if (gameState.currentPlayerSocketId !== mySocketId) {
+        showMessage('Not your turn!', 1500);
         return;
     }
 
-    socket.emit('discard', { cardId: selectedCards[0] });
+    socket.emit('endTurn');
     selectedCards = [];
 }
 

@@ -54,14 +54,20 @@
                     </div>
                 </div>
                 <div class="rules-summary">
-                    <h3>How to Play:</h3>
+                    <h3>How to Play (Hybrid UNO + Rummy):</h3>
                     <ul>
-                        <li><strong>Objective:</strong> Be the first to play all your cards by forming melds!</li>
-                        <li><strong>Sets:</strong> 3+ cards of the same number, different colors</li>
-                        <li><strong>Runs:</strong> 3+ consecutive numbers of the same color</li>
-                        <li><strong>Turn:</strong> Draw a card, optionally play melds, then discard</li>
-                        <li><strong>Special Cards:</strong> Skip, Reverse, Draw, Wild, and FLIP!</li>
-                        <li><strong>FLIP:</strong> Changes all cards to their opposite side (Light ↔ Dark)</li>
+                        <li><strong>Objective:</strong> First to empty your hand wins!</li>
+                        <li><strong>Your Turn - Choose ONE:</strong>
+                            <ul style="margin-left: 20px; margin-top: 5px;">
+                                <li>📥 Draw a card (if you can't/won't play)</li>
+                                <li>🎯 Play card(s) matching color/number (UNO-style)</li>
+                                <li>🃏 Play a meld (3+ cards: Set or Run)</li>
+                            </ul>
+                        </li>
+                        <li><strong>Card Matching:</strong> Cards must match discard pile's color OR number</li>
+                        <li><strong>Melds (Rummy):</strong> Set (same #, diff colors) or Run (consecutive #s, same color)</li>
+                        <li><strong>Special Cards:</strong> Skip, Reverse, Draw, Wild, FLIP - play like UNO!</li>
+                        <li><strong>FLIP Card:</strong> Switches deck between Light ↔ Dark side!</li>
                     </ul>
                 </div>
             </div>
@@ -105,14 +111,15 @@
                 </div>
 
                 <div id="player-area">
-                    <h3 id="player-hand-title">Your Hand</h3>
+                    <h3 id="player-hand-title">Your Hand <span id="turn-hint"></span></h3>
                     <div id="player-hand"></div>
                     <div id="player-actions">
-                        <button id="draw-card-btn" class="btn btn-primary">Draw Card</button>
-                        <button id="play-meld-btn" class="btn btn-success" disabled>Play Meld</button>
-                        <button id="discard-btn" class="btn btn-warning" disabled>Discard & End Turn</button>
-                        <button id="sort-hand-btn" class="btn btn-secondary">Sort Hand</button>
+                        <button id="draw-card-btn" class="btn btn-primary">📥 Draw Card</button>
+                        <button id="play-meld-btn" class="btn btn-success" disabled>🃏 Play Meld (3+ cards)</button>
+                        <button id="end-turn-btn" class="btn btn-warning" disabled>⏭️ End Turn</button>
+                        <button id="sort-hand-btn" class="btn btn-secondary">🔄 Sort Hand</button>
                     </div>
+                    <div id="action-hint" class="action-hint"></div>
                 </div>
 
                 <div id="other-players">

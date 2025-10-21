@@ -115,6 +115,7 @@ class Room {
         this.gameStarted = false;
         this.maxPlayers = 6;
         this.hasDrawnThisTurn = false;
+        this.hasPlayedThisTurn = false;
     }
 
     addPlayer(socketId, playerName) {
@@ -151,6 +152,7 @@ class Room {
         this.direction = 1;
         this.isDarkSide = false;
         this.hasDrawnThisTurn = false;
+        this.hasPlayedThisTurn = false;
 
         // Deal 7 cards to each player
         for (let i = 0; i < 7; i++) {
@@ -174,6 +176,36 @@ class Room {
     nextPlayer() {
         this.currentPlayerIndex = (this.currentPlayerIndex + this.direction + this.players.length) % this.players.length;
         this.hasDrawnThisTurn = false;
+        this.hasPlayedThisTurn = false;
+    }
+
+    // Check if a card can be played on the discard pile (UNO-style matching)
+    canPlayCard(card) {
+        if (this.discardPile.length === 0) return true; // First card can always be played
+
+        const topCard = this.discardPile[this.discardPile.length - 1];
+
+        // Wild and Flip cards can always be played
+        if (card.type === 'wild' || card.type === 'flip') return true;
+
+        // Must match color or number/type
+        const cardColor = card.getColor(this.isDarkSide);
+        const topColor = topCard.getColor(this.isDarkSide);
+
+        // Match color
+        if (cardColor === topColor) return true;
+
+        // Match number (for number cards)
+        if (card.type === 'number' && topCard.type === 'number') {
+            const cardValue = card.getDisplayValue(this.isDarkSide);
+            const topValue = topCard.getDisplayValue(this.isDarkSide);
+            if (cardValue === topValue) return true;
+        }
+
+        // Match type (for special cards)
+        if (card.type === topCard.type && card.type !== 'number') return true;
+
+        return false;
     }
 
     getGameState(socketId) {
@@ -195,7 +227,8 @@ class Room {
             discardPile: this.discardPile,
             melds: this.melds,
             deckCount: this.deck.count(),
-            hasDrawnThisTurn: this.hasDrawnThisTurn
+            hasDrawnThisTurn: this.hasDrawnThisTurn,
+            hasPlayedThisTurn: this.hasPlayedThisTurn
         };
     }
 }
@@ -284,8 +317,8 @@ io.on('connection', (socket) => {
             return;
         }
 
-        if (room.hasDrawnThisTurn) {
-            socket.emit('error', { message: 'You already drew a card this turn' });
+        if (room.hasDrawnThisTurn || room.hasPlayedThisTurn) {
+            socket.emit('error', { message: 'You already took an action. Click "End Turn" to finish.' });
             return;
         }
 
@@ -346,7 +379,8 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('discard', ({ cardId }) => {
+    // Play a single card (UNO-style matching)
+    socket.on('playCard', ({ cardId }) => {
         const playerData = players.get(socket.id);
         if (!playerData) return;
 
@@ -361,28 +395,49 @@ io.on('connection', (socket) => {
             return;
         }
 
-        if (!room.hasDrawnThisTurn) {
-            socket.emit('error', { message: 'You must draw a card first' });
+        if (room.hasDrawnThisTurn) {
+            socket.emit('error', { message: 'You already drew a card. Cannot play cards after drawing.' });
             return;
         }
 
         const cardIndex = player.hand.findIndex(c => c.id === cardId);
         if (cardIndex === -1) return;
 
-        const card = player.hand.splice(cardIndex, 1)[0];
-        room.discardPile.push(card);
+        const card = player.hand[cardIndex];
 
-        // Handle special cards
+        // Check if card can be played
+        if (!room.canPlayCard(card)) {
+            socket.emit('error', { message: 'Card doesn\'t match! Must match color or number.' });
+            return;
+        }
+
+        // Remove card from hand and add to discard pile
+        player.hand.splice(cardIndex, 1);
+        room.discardPile.push(card);
+        room.hasPlayedThisTurn = true;
+
+        // Handle special card effects
+        let autoEndTurn = false;
         if (card.type === 'skip') {
-            room.nextPlayer();
             if (room.isDarkSide) {
-                // Skip all - same player again
+                // Dark side: Skip all other players (you get another turn)
+                io.to(playerData.roomCode).emit('message', {
+                    text: `🚫 ${player.name} played Skip All! Another turn!`
+                });
+                room.hasPlayedThisTurn = false; // Allow playing more cards
             } else {
+                // Light side: Skip next player
                 room.nextPlayer();
+                io.to(playerData.roomCode).emit('message', {
+                    text: `🚫 ${player.name} played Skip! ${room.getCurrentPlayer().name} is skipped.`
+                });
+                autoEndTurn = true;
             }
         } else if (card.type === 'reverse') {
             room.direction *= -1;
-            room.nextPlayer();
+            io.to(playerData.roomCode).emit('message', {
+                text: `🔄 ${player.name} played Reverse! Direction changed.`
+            });
         } else if (card.type === 'draw') {
             room.nextPlayer();
             const nextPlayer = room.getCurrentPlayer();
@@ -391,12 +446,19 @@ io.on('connection', (socket) => {
                 const drawnCard = room.deck.draw();
                 if (drawnCard) nextPlayer.hand.push(drawnCard);
             }
-            room.nextPlayer();
+            io.to(playerData.roomCode).emit('message', {
+                text: `📥 ${player.name} played Draw +${drawCount}! ${nextPlayer.name} draws ${drawCount} card${drawCount > 1 ? 's' : ''}.`
+            });
+            autoEndTurn = true;
         } else if (card.type === 'flip') {
             room.isDarkSide = !room.isDarkSide;
-            room.nextPlayer();
-        } else {
-            room.nextPlayer();
+            io.to(playerData.roomCode).emit('message', {
+                text: `🔃 ${player.name} played FLIP! Deck is now ${room.isDarkSide ? 'DARK' : 'LIGHT'}!`
+            });
+        } else if (card.type === 'wild') {
+            io.to(playerData.roomCode).emit('message', {
+                text: `🌈 ${player.name} played a Wild card!`
+            });
         }
 
         // Check for winner
@@ -412,9 +474,45 @@ io.on('connection', (socket) => {
             io.to(p.socketId).emit('gameState', room.getGameState(p.socketId));
         });
 
-        const nextPlayerName = room.getCurrentPlayer().name;
+        // Auto-end turn for some special cards
+        if (autoEndTurn) {
+            room.nextPlayer();
+            room.players.forEach(p => {
+                io.to(p.socketId).emit('gameState', room.getGameState(p.socketId));
+            });
+        }
+    });
+
+    // End turn manually
+    socket.on('endTurn', () => {
+        const playerData = players.get(socket.id);
+        if (!playerData) return;
+
+        const room = rooms.get(playerData.roomCode);
+        if (!room) return;
+
+        const player = room.getPlayerBySocketId(socket.id);
+        const currentPlayer = room.getCurrentPlayer();
+
+        if (player.socketId !== currentPlayer.socketId) {
+            socket.emit('error', { message: 'Not your turn' });
+            return;
+        }
+
+        if (!room.hasDrawnThisTurn && !room.hasPlayedThisTurn) {
+            socket.emit('error', { message: 'You must draw a card or play cards before ending your turn' });
+            return;
+        }
+
+        room.nextPlayer();
+
         io.to(playerData.roomCode).emit('message', {
-            text: `${player.name} discarded. ${nextPlayerName}'s turn.`
+            text: `${player.name}'s turn ended. ${room.getCurrentPlayer().name}'s turn!`
+        });
+
+        // Update all players
+        room.players.forEach(p => {
+            io.to(p.socketId).emit('gameState', room.getGameState(p.socketId));
         });
     });
 
