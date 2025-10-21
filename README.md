@@ -29,12 +29,14 @@ This game features **real-time multiplayer** using Socket.io! Play with friends 
 
 ### Deploy Online
 
-Want to play with friends online? See **[DEPLOYMENT.md](DEPLOYMENT.md)** for detailed instructions on deploying to:
-- Railway (Recommended - Free & Easy)
-- Render
-- Fly.io
+Want to play with friends online?
 
-**Note**: Vercel doesn't fully support WebSocket apps. Use Railway instead!
+**🚀 Auto-Deploy (Recommended)**: See **[AUTO_DEPLOY.md](AUTO_DEPLOY.md)** - Set up automatic deployment on every push to `main`:
+- ⭐ **Railway** (Best choice - Auto-deploys from GitHub!)
+- **Render** (Also supports auto-deploy from GitHub)
+- ❌ **Vercel** (NOT recommended - doesn't support WebSockets)
+
+**📖 Manual Deploy**: See **[DEPLOYMENT.md](DEPLOYMENT.md)** for manual deployment instructions
 
 ## How to Play
 

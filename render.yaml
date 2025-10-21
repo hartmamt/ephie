@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: uno-rummy-flip
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
