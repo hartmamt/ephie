@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uno Rummy Flip - Party Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <header>
+            <h1>🎮 UNO RUMMY FLIP 🎮</h1>
+            <div id="game-info">
+                <div class="info-item">
+                    <span class="label">Current Side:</span>
+                    <span id="deck-side" class="value light-side">☀️ LIGHT</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Current Player:</span>
+                    <span id="current-player" class="value">Player 1</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Direction:</span>
+                    <span id="game-direction" class="value">→</span>
+                </div>
+            </div>
+        </header>
+
+        <div id="setup-screen">
+            <div class="setup-panel">
+                <h2>Game Setup</h2>
+                <div class="setup-controls">
+                    <label for="player-count">Number of Players:</label>
+                    <input type="number" id="player-count" min="2" max="6" value="3">
+                    <button id="start-game-btn" class="btn btn-primary">Start Game</button>
+                </div>
+                <div class="rules-summary">
+                    <h3>How to Play:</h3>
+                    <ul>
+                        <li><strong>Objective:</strong> Be the first to play all your cards by forming melds!</li>
+                        <li><strong>Sets:</strong> 3+ cards of the same number, different colors</li>
+                        <li><strong>Runs:</strong> 3+ consecutive numbers of the same color</li>
+                        <li><strong>Turn:</strong> Draw a card, optionally play melds, then discard</li>
+                        <li><strong>Special Cards:</strong> Skip, Reverse, Draw, Wild, and FLIP!</li>
+                        <li><strong>FLIP:</strong> Changes all cards to their opposite side (Light ↔ Dark)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-screen" style="display: none;">
+            <div id="game-area">
+                <div id="deck-area">
+                    <div id="draw-pile" class="card-pile">
+                        <div class="card back"></div>
+                        <span class="pile-label">Draw Pile</span>
+                    </div>
+                    <div id="discard-pile" class="card-pile">
+                        <span class="pile-label">Discard Pile</span>
+                    </div>
+                </div>
+
+                <div id="melds-area">
+                    <h3>Played Melds</h3>
+                    <div id="melds-container"></div>
+                </div>
+
+                <div id="player-area">
+                    <h3 id="player-hand-title">Your Hand</h3>
+                    <div id="player-hand"></div>
+                    <div id="player-actions">
+                        <button id="draw-card-btn" class="btn btn-primary">Draw Card</button>
+                        <button id="play-meld-btn" class="btn btn-success" disabled>Play Meld</button>
+                        <button id="discard-btn" class="btn btn-warning" disabled>Discard & End Turn</button>
+                        <button id="sort-hand-btn" class="btn btn-secondary">Sort Hand</button>
+                    </div>
+                </div>
+
+                <div id="other-players">
+                    <h3>Other Players</h3>
+                    <div id="other-players-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="message-box"></div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
