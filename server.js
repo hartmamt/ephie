@@ -208,6 +208,72 @@ class Room {
         return false;
     }
 
+    // Validate if cards form a valid SET (same number, different colors)
+    isValidSet(cards) {
+        if (cards.length < 3) return false;
+
+        // All cards must be number cards
+        if (!cards.every(c => c.type === 'number')) return false;
+
+        // All must have same VALUE (considering dark side)
+        const firstValue = cards[0].getDisplayValue(this.isDarkSide);
+        if (!cards.every(c => c.getDisplayValue(this.isDarkSide) === firstValue)) {
+            return false;
+        }
+
+        // All must have DIFFERENT colors
+        const colors = cards.map(c => c.getColor(this.isDarkSide));
+        const uniqueColors = new Set(colors);
+        if (uniqueColors.size !== cards.length) {
+            return false; // Duplicate colors found
+        }
+
+        return true;
+    }
+
+    // Validate if cards form a valid RUN (consecutive numbers, same color)
+    isValidRun(cards) {
+        if (cards.length < 3) return false;
+
+        // All cards must be number cards
+        if (!cards.every(c => c.type === 'number')) return false;
+
+        // All must have SAME color
+        const firstColor = cards[0].getColor(this.isDarkSide);
+        if (!cards.every(c => c.getColor(this.isDarkSide) === firstColor)) {
+            return false;
+        }
+
+        // Sort by value
+        const sorted = [...cards].sort((a, b) => {
+            return a.getDisplayValue(this.isDarkSide) - b.getDisplayValue(this.isDarkSide);
+        });
+
+        // Check for consecutive values (no duplicates, no gaps)
+        for (let i = 1; i < sorted.length; i++) {
+            const prevValue = sorted[i - 1].getDisplayValue(this.isDarkSide);
+            const currValue = sorted[i].getDisplayValue(this.isDarkSide);
+
+            if (currValue !== prevValue + 1) {
+                return false; // Not consecutive
+            }
+        }
+
+        return true;
+    }
+
+    // Check if cards form a valid meld (SET or RUN)
+    isValidMeld(cards) {
+        return this.isValidSet(cards) || this.isValidRun(cards);
+    }
+
+    // Get meld type for display
+    getMeldType(cards) {
+        if (this.isValidSet(cards)) return 'SET';
+        if (this.isValidRun(cards)) return 'RUN';
+        return null;
+    }
+
     getGameState(socketId) {
         const player = this.getPlayerBySocketId(socketId);
 
@@ -346,36 +412,60 @@ io.on('connection', (socket) => {
         if (!room) return;
 
         const player = room.getPlayerBySocketId(socket.id);
+        const currentPlayer = room.getCurrentPlayer();
+
+        if (player.socketId !== currentPlayer.socketId) {
+            socket.emit('error', { message: 'Not your turn' });
+            return;
+        }
+
+        if (room.hasDrawnThisTurn) {
+            socket.emit('error', { message: 'Cannot play melds after drawing. End your turn.' });
+            return;
+        }
+
         const cards = cardIds.map(id => player.hand.find(c => c.id === id)).filter(c => c);
 
-        // Validate meld (simplified - should use proper validation)
-        if (cards.length >= 3) {
-            room.melds.push({
-                cards: cards,
-                player: player.name
-            });
+        // Validate meld properly
+        if (!room.isValidMeld(cards)) {
+            const reason = cards.length < 3
+                ? 'Need at least 3 cards for a meld'
+                : 'Invalid meld! Must be a SET (same number, different colors) or RUN (consecutive numbers, same color)';
+            socket.emit('error', { message: reason });
+            return;
+        }
 
-            // Remove cards from hand
-            cardIds.forEach(id => {
-                const index = player.hand.findIndex(c => c.id === id);
-                if (index !== -1) player.hand.splice(index, 1);
-            });
+        const meldType = room.getMeldType(cards);
 
-            // Update all players
-            room.players.forEach(p => {
-                io.to(p.socketId).emit('gameState', room.getGameState(p.socketId));
-            });
+        // Valid meld - add it
+        room.melds.push({
+            cards: cards,
+            type: meldType,
+            player: player.name
+        });
 
-            io.to(playerData.roomCode).emit('message', {
-                text: `${player.name} played a meld!`
-            });
+        // Remove cards from hand
+        cardIds.forEach(id => {
+            const index = player.hand.findIndex(c => c.id === id);
+            if (index !== -1) player.hand.splice(index, 1);
+        });
 
-            // Check for winner
-            if (player.hand.length === 0) {
-                io.to(playerData.roomCode).emit('gameOver', {
-                    winner: player.name
-                });
-            }
+        room.hasPlayedThisTurn = true;
+
+        // Update all players
+        room.players.forEach(p => {
+            io.to(p.socketId).emit('gameState', room.getGameState(p.socketId));
+        });
+
+        io.to(playerData.roomCode).emit('message', {
+            text: `${player.name} played a ${meldType}!`
+        });
+
+        // Check for winner
+        if (player.hand.length === 0) {
+            io.to(playerData.roomCode).emit('gameOver', {
+                winner: player.name
+            });
         }
     });
 
