@@ -1,0 +1,26 @@
+{
+  "name": "uno-rummy-flip",
+  "version": "1.0.0",
+  "description": "Web-based multiplayer party game combining UNO Flip and Rummy",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "uno",
+    "rummy",
+    "card-game",
+    "multiplayer",
+    "party-game"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}

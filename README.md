@@ -1,17 +1,48 @@
-# UNO RUMMY FLIP - Web-Based Party Game
+# UNO RUMMY FLIP - Multiplayer Web Party Game
 
-A unique web-based party game that combines the exciting mechanics of **UNO Flip** and **Rummy** into one fun experience!
+A unique **real-time multiplayer** web party game that combines the exciting mechanics of **UNO Flip** and **Rummy** into one fun experience!
 
 ## Game Overview
 
 Uno Rummy Flip blends the colorful, action-packed gameplay of UNO Flip with the strategic meld-building of Rummy. Players must form sets and runs while dealing with special cards and the dramatic FLIP mechanic that changes the game!
 
+## 🎮 Play Online (Multiplayer)
+
+This game features **real-time multiplayer** using Socket.io! Play with friends from anywhere.
+
+### Quick Start
+
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Start the server**
+   ```bash
+   npm start
+   ```
+
+3. **Play the game**
+   - Open `http://localhost:3000` in your browser
+   - Create a room or join with a room code
+   - Share the code with friends!
+
+### Deploy Online
+
+Want to play with friends online? See **[DEPLOYMENT.md](DEPLOYMENT.md)** for detailed instructions on deploying to:
+- Railway (Recommended - Free & Easy)
+- Render
+- Fly.io
+
+**Note**: Vercel doesn't fully support WebSocket apps. Use Railway instead!
+
 ## How to Play
 
 ### Setup
-1. Open `index.html` in your web browser
-2. Select the number of players (2-6)
-3. Click "Start Game" to begin
+1. Enter your name
+2. Create a room or join with a room code
+3. Wait for friends to join (2-6 players)
+4. Start the game!
 
 ### Objective
 Be the first player to play all your cards by forming valid melds (sets and runs)!
@@ -69,12 +100,14 @@ The first player to empty their hand wins the game!
 
 ## Features
 
-- **2-6 Players**: Play solo against AI or with friends on the same device
-- **Smart AI**: Computer players make strategic decisions
+- **Real-Time Multiplayer**: Play with 2-6 friends online using WebSockets
+- **Room System**: Create or join games with simple room codes
+- **Live Game State**: See all players' moves in real-time
 - **Beautiful UI**: Colorful cards with smooth animations
 - **Responsive Design**: Works on desktop and mobile devices
-- **Real-time Updates**: See other players' card counts and active melds
+- **Turn Indicators**: Always know whose turn it is
 - **Card Sorting**: Organize your hand by color and number
+- **Persistent Rooms**: Games continue until all players leave
 
 ## Tips & Strategy
 
@@ -86,9 +119,11 @@ The first player to empty their hand wins the game!
 
 ## Technical Details
 
-- **Pure JavaScript**: No frameworks required
-- **No Server Needed**: Runs entirely in the browser
-- **Local Multiplayer**: All players share one screen and take turns
+- **Backend**: Node.js + Express + Socket.io
+- **Frontend**: Vanilla JavaScript (no frameworks)
+- **Real-Time Communication**: WebSocket connections via Socket.io
+- **Game State**: Server-authoritative (prevents cheating)
+- **Deployment**: Compatible with Railway, Render, Fly.io, and more
 
 ## Browser Compatibility
 
